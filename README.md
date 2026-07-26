@@ -40,7 +40,7 @@ Method | `cmd` \| `powershell_file` \| `powershell_inline` \| `pwsh_file` \| `pw
 Command | Target executable/script path or inline command
 Arguments *(optional)* | Arguments passed to `Command`
 WorkingDirectory *(optional)* | Process working directory
-RunAsAdmin *(optional)* | `true/false`, `yes/no`, or `1/0`
+RunAsAdmin *(optional)* | `true/false`, `yes/no`, `y/n`, or `1/0`
 Name | Button text
 Description *(optional)* | Description text
 

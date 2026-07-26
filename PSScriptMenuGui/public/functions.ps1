@@ -276,7 +276,8 @@ Function New-MenuCsvFromScripts {
                 $method = 'powershell_file'
                 $description = ''
                 $raw = Get-Content -Path $file.FullName -Raw
-                # Extract the first .SYNOPSIS line from comment-based help blocks.
+                # Match comment-based help (<# ... #>), capture the text immediately after .SYNOPSIS,
+                # and stop before the next help keyword (for example .DESCRIPTION) or the closing #>.
                 $synopsisMatch = [regex]::Match($raw, '(?ms)<#.*?\.SYNOPSIS\s*(?<synopsis>.+?)(?:\r?\n\s*\.[A-Z][A-Z0-9_]*|#>)')
                 if ($synopsisMatch.Success) {
                     $description = (($synopsisMatch.Groups['synopsis'].Value -split "`r?`n") | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1).Trim()
