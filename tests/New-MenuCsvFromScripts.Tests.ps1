@@ -103,4 +103,108 @@ param()
 
         { New-MenuCsvFromScripts -Path $scriptsPath -OutputCsvPath $scriptsPath } | Should -Throw "OutputCsvPath '$scriptsPath' must be a file path, not a directory."
     }
+
+    It 'applies extended default SectionMap for New, Set, and Remove prefixes' {
+        $scriptsPath = Join-Path $TestDrive 'scripts-extended-map'
+        New-Item -Path $scriptsPath -ItemType Directory | Out-Null
+
+        @'
+<#
+.SYNOPSIS
+Create a user.
+#>
+param()
+'@ | Set-Content -Path (Join-Path $scriptsPath 'New-User.ps1')
+
+        @'
+<#
+.SYNOPSIS
+Update a setting.
+#>
+param()
+'@ | Set-Content -Path (Join-Path $scriptsPath 'Set-Config.ps1')
+
+        @'
+<#
+.SYNOPSIS
+Delete a record.
+#>
+param()
+'@ | Set-Content -Path (Join-Path $scriptsPath 'Remove-Record.ps1')
+
+        $rows = New-MenuCsvFromScripts -Path $scriptsPath -PassThru
+
+        $rows.Count | Should -Be 3
+        ($rows | Where-Object Name -eq 'New-User').Section | Should -Be 'NEW'
+        ($rows | Where-Object Name -eq 'Set-Config').Section | Should -Be 'UPDATE'
+        ($rows | Where-Object Name -eq 'Remove-Record').Section | Should -Be 'DELETE'
+    }
+
+    It 'uses DefaultSection for unmatched prefixes' {
+        $scriptsPath = Join-Path $TestDrive 'scripts-default-section'
+        New-Item -Path $scriptsPath -ItemType Directory | Out-Null
+
+        'REM Utility tool' | Set-Content -Path (Join-Path $scriptsPath 'Utility.cmd')
+
+        $rows = New-MenuCsvFromScripts -Path $scriptsPath -PassThru
+        $rows.Count | Should -Be 1
+        $rows[0].Section | Should -Be 'MISC'
+    }
+
+    It 'respects custom DefaultSection value' {
+        $scriptsPath = Join-Path $TestDrive 'scripts-custom-default'
+        New-Item -Path $scriptsPath -ItemType Directory | Out-Null
+
+        'REM General tool' | Set-Content -Path (Join-Path $scriptsPath 'General.cmd')
+
+        $rows = New-MenuCsvFromScripts -Path $scriptsPath -DefaultSection 'OTHER' -PassThru
+        $rows.Count | Should -Be 1
+        $rows[0].Section | Should -Be 'OTHER'
+    }
+
+    It 'filters files by IncludeExtensions' {
+        $scriptsPath = Join-Path $TestDrive 'scripts-extensions'
+        New-Item -Path $scriptsPath -ItemType Directory | Out-Null
+
+        @'
+<#
+.SYNOPSIS
+A PowerShell script.
+#>
+param()
+'@ | Set-Content -Path (Join-Path $scriptsPath 'Get-Data.ps1')
+
+        'REM A cmd script' | Set-Content -Path (Join-Path $scriptsPath 'Run.cmd')
+
+        $rows = New-MenuCsvFromScripts -Path $scriptsPath -IncludeExtensions '.ps1' -PassThru
+        $rows.Count | Should -Be 1
+        $rows[0].Name | Should -Be 'Get-Data'
+    }
+
+    It 'throws if LaunchGui is specified without OutputCsvPath' {
+        $scriptsPath = Join-Path $TestDrive 'scripts-launchgui'
+        New-Item -Path $scriptsPath -ItemType Directory | Out-Null
+
+        { New-MenuCsvFromScripts -Path $scriptsPath -LaunchGui } | Should -Throw '-LaunchGui requires -OutputCsvPath to be specified.'
+    }
+
+    It 'calls Show-ScriptMenuGui when LaunchGui is specified' {
+        Mock Show-ScriptMenuGui {}
+
+        $scriptsPath = Join-Path $TestDrive 'scripts-launch'
+        New-Item -Path $scriptsPath -ItemType Directory | Out-Null
+
+        @'
+<#
+.SYNOPSIS
+Launch test script.
+#>
+param()
+'@ | Set-Content -Path (Join-Path $scriptsPath 'Get-Launch.ps1')
+
+        $outputPath = Join-Path $TestDrive 'launch-menu.csv'
+        New-MenuCsvFromScripts -Path $scriptsPath -OutputCsvPath $outputPath -LaunchGui
+
+        Should -Invoke Show-ScriptMenuGui -Times 1 -ParameterFilter { $csvPath -eq $outputPath }
+    }
 }

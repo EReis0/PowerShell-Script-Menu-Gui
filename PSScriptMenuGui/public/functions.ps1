@@ -233,17 +233,26 @@ Function New-MenuCsvFromScripts {
     .SYNOPSIS
         Build menu CSV rows from scripts in a folder.
     .PARAMETER Path
-        Folder to scan for .ps1, .cmd and .bat files.
+        Folder to scan for script files.
     .PARAMETER Recurse
         Scan all subfolders.
     .PARAMETER OutputCsvPath
-        Optional output path to write CSV file.
+        Optional output path to write CSV file. Required when -LaunchGui is specified.
     .PARAMETER Append
         Append rows if OutputCsvPath already exists.
     .PARAMETER SectionMap
-        Map filename prefixes to section names (case-insensitive prefix match).
+        Map filename prefixes to section names (case-insensitive prefix match). Longer prefixes
+        take priority over shorter ones. Defaults to Get->QUERIES, Add/New->NEW, Set->UPDATE,
+        Remove->DELETE.
     .PARAMETER PassThru
         Return the generated rows to the pipeline even when OutputCsvPath is specified.
+    .PARAMETER IncludeExtensions
+        File extensions to include. Defaults to .ps1, .cmd and .bat.
+    .PARAMETER DefaultSection
+        Section name used when no SectionMap prefix matches the file name. Defaults to MISC.
+    .PARAMETER LaunchGui
+        After generating the CSV, call Show-ScriptMenuGui with the generated file.
+        Requires -OutputCsvPath to be specified.
     #>
     [CmdletBinding()]
     param(
@@ -251,9 +260,22 @@ Function New-MenuCsvFromScripts {
         [string]$OutputCsvPath,
         [switch]$Recurse,
         [switch]$Append,
-        [hashtable]$SectionMap = @{ 'Get' = 'QUERIES'; 'Add' = 'NEW' },
-        [switch]$PassThru
+        [hashtable]$SectionMap = @{
+            'Get'    = 'QUERIES'
+            'Add'    = 'NEW'
+            'New'    = 'NEW'
+            'Set'    = 'UPDATE'
+            'Remove' = 'DELETE'
+        },
+        [switch]$PassThru,
+        [string[]]$IncludeExtensions = @('.ps1', '.cmd', '.bat'),
+        [string]$DefaultSection = 'MISC',
+        [switch]$LaunchGui
     )
+
+    if ($LaunchGui -and -not $OutputCsvPath) {
+        throw '-LaunchGui requires -OutputCsvPath to be specified.'
+    }
 
     $resolvedPath = (Resolve-Path -Path $Path -ErrorAction Stop).Path
 
@@ -265,7 +287,7 @@ Function New-MenuCsvFromScripts {
         $childItemParams['Recurse'] = $true
     }
 
-    $files = Get-ChildItem @childItemParams | Where-Object { $_.Extension -in '.ps1', '.cmd', '.bat' } | Sort-Object FullName
+    $files = Get-ChildItem @childItemParams | Where-Object { $_.Extension -in $IncludeExtensions } | Sort-Object FullName
 
     $getBatchDescription = {
         param([string]$filePath)
@@ -278,7 +300,7 @@ Function New-MenuCsvFromScripts {
     }
     $rows = foreach ($file in $files) {
         $baseName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-        $section = ''
+        $section = $DefaultSection
         foreach ($prefix in ($SectionMap.Keys | Sort-Object Length -Descending)) {
             if ($baseName.StartsWith([string]$prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
                 $section = [string]$SectionMap[$prefix]
@@ -298,15 +320,16 @@ Function New-MenuCsvFromScripts {
                     $description = (($synopsisMatch.Groups['synopsis'].Value -split "`r?`n") | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1).Trim()
                 }
             }
-            '.cmd' { 
+            '.cmd' {
                 $method = 'cmd'
                 $description = & $getBatchDescription $file.FullName
             }
-            '.bat' { 
+            '.bat' {
                 $method = 'cmd'
                 $description = & $getBatchDescription $file.FullName
             }
             default {
+                Write-Warning "Skipping '$($file.Name)': extension '$($file.Extension)' is not supported for metadata extraction. Only .ps1, .cmd, and .bat are supported."
                 continue
             }
         }
@@ -340,6 +363,10 @@ Function New-MenuCsvFromScripts {
         else {
             $rows | Export-Csv -Path $OutputCsvPath -NoTypeInformation
         }
+    }
+
+    if ($LaunchGui) {
+        Show-ScriptMenuGui -csvPath $OutputCsvPath
     }
 
     if ($PassThru -or -not $OutputCsvPath) {

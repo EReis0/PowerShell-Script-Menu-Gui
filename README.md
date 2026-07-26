@@ -92,9 +92,47 @@ Press `ESC` to close in fullscreen mode.
 ## Auto-build CSV from scripts
 
 ```powershell
-New-MenuCsvFromScripts -Path '.\scripts' -Recurse -OutputCsvPath '.\generated-menu.csv' -SectionMap @{ 'Get'='QUERIES'; 'Add'='NEW' }
+New-MenuCsvFromScripts -Path '.\scripts' -Recurse -OutputCsvPath '.\generated-menu.csv'
 Show-ScriptMenuGui -csvPath '.\generated-menu.csv'
 ```
+
+### New-MenuCsvFromScripts parameters
+
+Parameter | What is it?
+:--- |:---
+`-Path` | Folder to scan for script files (required).
+`-OutputCsvPath` | Path to write the generated CSV file. Required when `-LaunchGui` is used.
+`-Recurse` | Scan subfolders recursively.
+`-Append` | Append rows to an existing CSV instead of overwriting it.
+`-IncludeExtensions` | Extensions to include (default: `.ps1`, `.cmd`, `.bat`).
+`-SectionMap` | Hashtable mapping filename prefixes to section names. Longer prefixes take priority. Defaults: `Get`→`QUERIES`, `Add`/`New`→`NEW`, `Set`→`UPDATE`, `Remove`→`DELETE`.
+`-DefaultSection` | Section name used when no prefix matches (default: `MISC`).
+`-LaunchGui` | Generate CSV then immediately call `Show-ScriptMenuGui`. Requires `-OutputCsvPath`.
+`-PassThru` | Return generated row objects to the pipeline.
+
+### Minimal example
+
+```powershell
+New-MenuCsvFromScripts -Path '.\scripts' -OutputCsvPath '.\menu.csv' -LaunchGui
+```
+
+### Custom SectionMap example
+
+```powershell
+New-MenuCsvFromScripts -Path '.\scripts' -Recurse -OutputCsvPath '.\menu.csv' `
+    -SectionMap @{ 'Get' = 'QUERIES'; 'Add' = 'NEW'; 'Set' = 'CHANGE'; 'Invoke' = 'ACTIONS' }
+Show-ScriptMenuGui -csvPath '.\menu.csv' -groupLayout Grid -columns 2
+```
+
+### Naming convention prerequisites
+
+For best results, follow PowerShell verb-noun naming for scripts:
+- `Get-Users.ps1` → section `QUERIES`, name `Get-Users`
+- `New-Ticket.ps1` → section `NEW`, name `New-Ticket`
+- `Set-Config.ps1` → section `UPDATE`, name `Set-Config`
+- `Remove-OldLogs.bat` → section `DELETE`, name `Remove-OldLogs`
+
+Add `.SYNOPSIS` to `.ps1` files and a `REM` / `::` comment as the first line of `.cmd` / `.bat` files to populate the Description column automatically.
 
 See: `examples/scripts/Generate-MenuAndLaunch.ps1`
 
@@ -113,7 +151,7 @@ Run from repository root:
 Invoke-Pester -Path .\tests
 ```
 
-Current coverage focuses on `New-MenuCsvFromScripts` behavior (metadata extraction, section mapping, CSV output/append, and output path validation).
+Current coverage focuses on `New-MenuCsvFromScripts` behavior: metadata extraction, section mapping (default and custom), `DefaultSection` fallback, `IncludeExtensions` filtering, `LaunchGui` invocation, CSV output/append, and output path validation.
 
 ## Manual validation notes
 
