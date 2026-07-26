@@ -178,8 +178,20 @@ Function Get-LayoutPlan {
     $columnWidths = @($buttonColumnWidth,'*')
     $rowCount = 0
 
-    $orderedSections = @($csvData.Section | Where-Object {-not [string]::IsNullOrEmpty($_)} | Get-Unique)
-    $blankSectionItems = @($csvData | Where-Object { [string]::IsNullOrEmpty($_.Section) })
+    $orderedSections = @()
+    $seenSections = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($row in $csvData) {
+        if ([string]::IsNullOrWhiteSpace($row.Section)) {
+            continue
+        }
+
+        $normalizedSection = $row.Section.Trim()
+        if ($seenSections.Add($normalizedSection)) {
+            $orderedSections += $normalizedSection
+        }
+    }
+
+    $blankSectionItems = @($csvData | Where-Object { [string]::IsNullOrWhiteSpace($_.Section) })
 
     switch ($groupLayout) {
         'Stacked' {
@@ -187,7 +199,7 @@ Function Get-LayoutPlan {
             foreach ($section in $orderedSections) {
                 $elements += [PSCustomObject]@{ Type='Heading'; Name=$section; Row=$currentRow; ButtonColumn=0; DescriptionColumn=1; ColumnSpan=2 }
                 $currentRow++
-                foreach ($item in ($csvData | Where-Object {$_.Section -eq $section})) {
+                foreach ($item in ($csvData | Where-Object { -not [string]::IsNullOrWhiteSpace($_.Section) -and $_.Section.Trim() -eq $section })) {
                     $elements += [PSCustomObject]@{ Type='Item'; Item=$item; Row=$currentRow; ButtonColumn=0; DescriptionColumn=1; ColumnSpan=1 }
                     $currentRow++
                 }
@@ -199,7 +211,7 @@ Function Get-LayoutPlan {
             $rowCount = [Math]::Max($currentRow,1)
         }
         'Grid' {
-            $sortedData = $csvData | Sort-Object @{Expression={ if ([string]::IsNullOrWhiteSpace($_.Section)) { 1 } else { 0 } }}, @{Expression={ $_.Section }}, Name, Command
+            $sortedData = $csvData | Sort-Object @{Expression={ if ([string]::IsNullOrWhiteSpace($_.Section)) { 1 } else { 0 } }}, @{Expression={ if ([string]::IsNullOrWhiteSpace($_.Section)) { '' } else { $_.Section.Trim() } }}, Name, Command
 
             $itemCount = [Math]::Max($sortedData.Count,1)
             $gridColumns = 0
@@ -222,7 +234,12 @@ Function Get-LayoutPlan {
 
             $currentRow = 0
             foreach ($section in ($orderedSections + @(''))) {
-                $sectionItems = @($sortedData | Where-Object {$_.Section -eq $section})
+                if ([string]::IsNullOrWhiteSpace($section)) {
+                    $sectionItems = @($sortedData | Where-Object { [string]::IsNullOrWhiteSpace($_.Section) })
+                }
+                else {
+                    $sectionItems = @($sortedData | Where-Object { -not [string]::IsNullOrWhiteSpace($_.Section) -and $_.Section.Trim() -eq $section })
+                }
                 if ($sectionItems.Count -eq 0) {
                     continue
                 }
@@ -248,7 +265,7 @@ Function Get-LayoutPlan {
             foreach ($section in $orderedSections) {
                 $sectionBlocks += [PSCustomObject]@{
                     Name = $section
-                    Items = @($csvData | Where-Object {$_.Section -eq $section} | Sort-Object Name, Command)
+                    Items = @($csvData | Where-Object { -not [string]::IsNullOrWhiteSpace($_.Section) -and $_.Section.Trim() -eq $section } | Sort-Object Name, Command)
                 }
             }
             if ($blankSectionItems.Count -gt 0) {

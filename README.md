@@ -68,6 +68,7 @@ Show-ScriptMenuGui -csvPath '.\examples\csv\grid-layout.csv' -groupLayout Column
 ```
 
 `Stacked` keeps the legacy behavior.
+Sections are grouped by section name (trimmed, case-insensitive), so CSV rows for the same section do not need to be contiguous.
 
 ## Fullscreen
 
@@ -102,3 +103,4 @@ There is no test framework in this repository. Reproducible validation:
 2. Generate CSV via `New-MenuCsvFromScripts` and verify exported columns.
 3. Launch menu in `Stacked`, `Grid`, `ColumnPerGroup`, and `Fullscreen` modes.
 4. Validate legacy CSV rows with only `Command` still launch.
+5. Validate repeated section names still render each section only once across all layouts.
