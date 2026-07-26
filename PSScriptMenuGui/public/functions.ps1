@@ -63,10 +63,10 @@ Function Show-ScriptMenuGui {
     Write-Verbose 'Show-ScriptMenuGui started'
 
     if ($columns -lt 0 -or $columns -gt 10) {
-        throw 'Columns must be between 1 and 10 when provided.'
+        throw 'Columns must be between 0 and 10 (0 uses auto/default behavior).'
     }
     if ($rows -lt 0 -or $rows -gt 200) {
-        throw 'Rows must be between 1 and 200 when provided.'
+        throw 'Rows must be between 0 and 200 (0 uses auto/default behavior).'
     }
     if ($buttonWidth -lt 80 -or $buttonWidth -gt 600) {
         throw 'ButtonWidth must be between 80 and 600.'
