@@ -317,3 +317,193 @@ Completed. README has parameter reference table, quoting guidance, layout exampl
 
 All planned phases are now complete. Next follow-up work should focus on:
 - Publishing an updated module version to the PowerShell Gallery.
+
+## Issue #1 – Enhancements (Auto-build CSV + Samples) — Remaining Work Plan
+
+### Goal
+Deliver an optional workflow that can automatically discover scripts in a folder, generate a Menu GUI CSV, and optionally launch `Show-MenuGui`.  
+This enhancement should be **best-effort and configurable**, without breaking existing CSV-driven usage.
+
+---
+
+### Scope
+
+#### 1) New helper command: auto-build CSV from scripts
+Add a new public function (proposed name):
+- `New-MenuCsvFromScripts`
+
+Proposed parameters:
+- `-ScriptsPath <string>` (required): root folder to scan
+- `-OutputCsvPath <string>` (required): destination CSV path
+- `-IncludeExtensions <string[]>` (optional, default: `@('.ps1','.cmd','.bat')`)
+- `-SectionMap <hashtable>` (optional): maps filename prefix/pattern to Section name
+- `-DefaultSection <string>` (optional, default: `"MISC"`)
+- `-Recurse` (switch): recurse into subfolders
+- `-LaunchGui` (switch): call `Show-MenuGui` after CSV generation
+- `-PassThru` (switch): return generated objects in pipeline
+- `-WhatIf` / `-Confirm` support (if feasible with existing command style)
+
+Out of scope for this issue:
+- Fullscreen mode / advanced layout engine
+- Replacing `Show-MenuGui` input model
+- Hard dependency on naming conventions
+
+---
+
+#### 2) Script discovery and filtering
+Implementation requirements:
+- Enumerate files in `-ScriptsPath` using allowed extensions
+- Skip non-matching extensions
+- Handle inaccessible/unreadable files with warnings (no hard stop unless path invalid)
+- Deterministic ordering (e.g., by directory then name) to produce stable CSV output
+
+Acceptance criteria:
+- Given a folder with mixed files, only configured extensions are included
+- Invalid path returns clear terminating error
+- Unreadable file emits warning and processing continues
+
+---
+
+#### 3) CSV field auto-completion rules
+
+##### 3.1 Section
+Rule:
+- Derive Section from file name prefix using `-SectionMap`
+- Example default mapping (documented, user-overridable):
+  - `Get*` => `QUERIES`
+  - `Add*`/`New*` => `NEW`
+  - `Set*` => `UPDATE`
+  - `Remove*` => `DELETE`
+- If no match: `-DefaultSection`
+
+Acceptance criteria:
+- Prefix mapping is case-insensitive
+- User-provided `-SectionMap` overrides default behavior
+- No match safely falls back to default section
+
+##### 3.2 Method
+Rule:
+- Derive from extension:
+  - `.ps1` => `PowerShell`
+  - `.cmd` => `CMD`
+  - `.bat` => `BAT`
+- Allow future extension map customization (optional backlog item; not required now)
+
+Acceptance criteria:
+- Every generated row has non-empty Method value
+- Unknown extension is excluded unless explicitly allowed
+
+##### 3.3 Command
+Rule:
+- Use base filename (without extension), removing recognized verb/prefix token when present
+- Example:
+  - `Get-Users.ps1` => `Users`
+  - `Add-LocalAdmin.cmd` => `LocalAdmin`
+- If no known prefix token found, keep full base name
+
+Acceptance criteria:
+- Command is human-readable and non-empty
+- Prefix stripping is conservative (never returns empty string)
+
+##### 3.4 Description
+Rule:
+- `.ps1`: extract `.SYNOPSIS` from comment-based help when available
+- `.cmd`/`.bat`: read first comment line (`REM ...` or `:: ...`) where available
+- Fallback: empty string or configured fallback text
+
+Acceptance criteria:
+- Missing help/comment does not fail generation
+- Description extraction is best-effort with warnings only for malformed edge cases (non-blocking)
+
+---
+
+#### 4) CSV writing and compatibility
+Implementation requirements:
+- Emit CSV schema compatible with existing `Show-MenuGui` expectations
+- Use explicit encoding and delimiter strategy consistent with repository standards
+- Overwrite behavior must be explicit (document whether overwrite is default or guarded)
+
+Acceptance criteria:
+- Generated CSV can be consumed directly by current `Show-MenuGui`
+- Sample-generated CSV launches menu without manual edits
+
+---
+
+#### 5) Optional launch flow
+If `-LaunchGui` is specified:
+1. Generate and save CSV
+2. Invoke `Show-MenuGui` with generated CSV path
+3. Surface invocation errors clearly
+
+Acceptance criteria:
+- Without `-LaunchGui`, command only generates CSV
+- With `-LaunchGui`, end-to-end flow works from a single command
+
+---
+
+### Documentation & Samples (required to close issue #1)
+
+#### 6) README updates
+Add a new section: **“Auto-build menu from script folder”**
+Must include:
+- Prerequisites and conventions:
+  - Naming conventions improve Section/Command quality
+  - `.SYNOPSIS`/comment usage improves Description quality
+- Minimal example
+- Advanced example with custom `-SectionMap`
+- Notes on fallbacks and warning behavior
+
+#### 7) New sample script
+Add an end-to-end sample file (proposed):
+- `examples/Build-And-Show-MenuGui.ps1`
+
+Sample flow:
+1. Set scripts folder
+2. Build CSV automatically
+3. Launch GUI
+4. Demonstrate optional custom SectionMap
+
+---
+
+### Tests
+
+#### 8) Unit tests
+Add tests for:
+- Section mapping logic (default + custom)
+- Command derivation (prefix stripping + fallback)
+- Method mapping by extension
+- Description extraction for:
+  - `.ps1` with and without `.SYNOPSIS`
+  - `.cmd/.bat` with and without comment line
+
+#### 9) Integration test
+Fixture directory with representative scripts; validate:
+- CSV is created
+- Row count matches discovered scripts
+- Required columns are present
+- Generated CSV can be passed to `Show-MenuGui` (mock or non-interactive check if needed)
+
+---
+
+### Implementation safeguards / reasons to avoid overreach
+These are **constraints**, not blockers:
+- Heuristics are inherently imperfect; must remain overridable and non-fatal
+- Do not hardcode one naming convention as mandatory
+- Keep helper command optional to preserve backward compatibility
+
+Conclusion:
+- No reason to reject the feature set in issue #1
+- Implement as optional, configurable, best-effort workflow
+
+---
+
+### Closure checklist for Issue #1
+- [ ] `New-MenuCsvFromScripts` (or equivalent) implemented
+- [ ] Auto-completion for Section/Method/Command/Description implemented
+- [ ] Supports `.ps1`, `.cmd`, `.bat`
+- [ ] CSV output is compatible with `Show-MenuGui`
+- [ ] `-LaunchGui` optional end-to-end flow works
+- [ ] README section added with prerequisites and examples
+- [ ] Sample script added
+- [ ] Unit + integration tests added
+- [ ] Issue #1 validated against acceptance criteria and closed
