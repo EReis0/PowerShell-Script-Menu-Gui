@@ -240,19 +240,19 @@ Function New-MenuCsvFromScripts {
         Optional output path to write CSV file. Required when -LaunchGui is specified.
     .PARAMETER Append
         Append rows if OutputCsvPath already exists.
-    .PARAMETER IncludeExtensions
-        File extensions to include. Defaults to .ps1, .cmd and .bat.
     .PARAMETER SectionMap
         Map filename prefixes to section names (case-insensitive prefix match). Longer prefixes
         take priority over shorter ones. Defaults to Get->QUERIES, Add/New->NEW, Set->UPDATE,
         Remove->DELETE.
+    .PARAMETER PassThru
+        Return the generated rows to the pipeline even when OutputCsvPath is specified.
+    .PARAMETER IncludeExtensions
+        File extensions to include. Defaults to .ps1, .cmd and .bat.
     .PARAMETER DefaultSection
         Section name used when no SectionMap prefix matches the file name. Defaults to MISC.
     .PARAMETER LaunchGui
         After generating the CSV, call Show-ScriptMenuGui with the generated file.
         Requires -OutputCsvPath to be specified.
-    .PARAMETER PassThru
-        Return the generated rows to the pipeline even when OutputCsvPath is specified.
     #>
     [CmdletBinding()]
     param(
@@ -260,7 +260,6 @@ Function New-MenuCsvFromScripts {
         [string]$OutputCsvPath,
         [switch]$Recurse,
         [switch]$Append,
-        [string[]]$IncludeExtensions = @('.ps1', '.cmd', '.bat'),
         [hashtable]$SectionMap = @{
             'Get'    = 'QUERIES'
             'Add'    = 'NEW'
@@ -268,9 +267,10 @@ Function New-MenuCsvFromScripts {
             'Set'    = 'UPDATE'
             'Remove' = 'DELETE'
         },
+        [switch]$PassThru,
+        [string[]]$IncludeExtensions = @('.ps1', '.cmd', '.bat'),
         [string]$DefaultSection = 'MISC',
-        [switch]$LaunchGui,
-        [switch]$PassThru
+        [switch]$LaunchGui
     )
 
     if ($LaunchGui -and -not $OutputCsvPath) {
