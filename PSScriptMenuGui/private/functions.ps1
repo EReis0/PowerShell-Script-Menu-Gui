@@ -232,6 +232,8 @@ Function Get-LayoutPlan {
                 }
             }
 
+            # Calculate total rows needed for a given Grid column count
+            # (includes section heading rows + distributed item rows).
             $getRowsForColumns = {
                 param([int]$columnCount)
 
@@ -263,15 +265,27 @@ Function Get-LayoutPlan {
                     }
                 }
                 else {
-                    for ($candidateColumns = 1; $candidateColumns -le $itemCount; $candidateColumns++) {
+                    $left = 1
+                    $right = $itemCount
+                    $bestColumns = 0
+
+                    while ($left -le $right) {
+                        $candidateColumns = [int][Math]::Floor(($left + $right) / 2)
                         $candidateRows = & $getRowsForColumns $candidateColumns
+
                         if ($candidateRows -le $rows) {
-                            $gridColumns = $candidateColumns
-                            break
+                            $bestColumns = $candidateColumns
+                            $right = $candidateColumns - 1
+                        }
+                        else {
+                            $left = $candidateColumns + 1
                         }
                     }
 
-                    if ($gridColumns -eq 0) {
+                    if ($bestColumns -gt 0) {
+                        $gridColumns = $bestColumns
+                    }
+                    else {
                         $gridColumns = $itemCount
                     }
                 }
