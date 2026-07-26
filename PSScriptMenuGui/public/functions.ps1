@@ -329,7 +329,7 @@ Function New-MenuCsvFromScripts {
                 $description = & $getBatchDescription $file.FullName
             }
             default {
-                Write-Warning "Skipping '$($file.Name)': extension '$($file.Extension)' is not supported. Supported extensions: .ps1, .cmd, .bat."
+                Write-Warning "Skipping '$($file.Name)': extension '$($file.Extension)' is not supported for automatic metadata extraction. Supported extensions: .ps1, .cmd, .bat."
                 continue
             }
         }
