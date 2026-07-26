@@ -254,10 +254,8 @@ Function Get-LayoutPlan {
 
             if ($rows -gt 0) {
                 if ($columns -gt 0) {
-                    $gridColumns = $columns
-                    $calculatedRows = & $getRowsForColumns $gridColumns
                     if ($calculatedRows -gt $rows) {
-                        throw "Grid layout requires $calculatedRows rows with $columns columns, but -rows is set to $rows. Increase -rows to at least $calculatedRows or reduce -columns."
+                        throw "Grid layout requires $calculatedRows rows with $columns columns, but -rows is set to $rows. Increase -rows to at least $calculatedRows or increase -columns."
                     }
                 }
                 else {
