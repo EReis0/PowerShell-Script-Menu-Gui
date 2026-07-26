@@ -29,23 +29,26 @@ This document provides a practical, phased plan to address the current open issu
 
 ## 3) Proposed Delivery Phases
 
-## Phase 0 — Baseline & Refactor Prep
+## Phase 0 — Baseline & Refactor Prep ✅ COMPLETE
 
 ### Tasks
-- Map current execution flow:
+- [x] Map current execution flow:
   - CSV parsing
   - button/control creation
   - command execution
   - form sizing/layout logic
-- Isolate responsibilities into helper functions if currently monolithic.
-- Add a lightweight “internal model” object for menu entries so feature additions do not directly couple to raw CSV rows.
+- [x] Isolate responsibilities into helper functions if currently monolithic.
+- [x] Add a lightweight "internal model" object for menu entries so feature additions do not directly couple to raw CSV rows.
 
 ### Deliverables
-- Internal notes in code comments.
-- Minimal refactor PR (no behavior change).
+- [x] Internal notes in code comments.
+- [x] Minimal refactor PR (no behavior change).
 
 ### Success criteria
-- Existing sample CSV works exactly as before.
+- [x] Existing sample CSV works exactly as before.
+
+### Progress note
+Completed. Code is organized into `public/functions.ps1` (exported functions: `Show-ScriptMenuGui`, `New-ScriptMenuGuiExample`, `New-MenuCsvFromScripts`) and `private/functions.ps1` (internal helpers: `Hide-Console`, `New-GuiHeading`, `New-GuiRow`, `Get-XamlSafeString`, `New-GuiForm`, `Invoke-ButtonAction`, `Get-LogicalBoolean`, `Resolve-MenuWorkingDirectory`, `Get-LayoutPlan`, `Start-Script`). Layout elements and CSV rows are represented as `PSCustomObject` instances with explicit named properties, decoupling downstream functions from raw CSV column access. Execution flow documented via a header comment block in `public/functions.ps1`.
 
 ---
 

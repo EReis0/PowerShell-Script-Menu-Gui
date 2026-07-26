@@ -1,3 +1,16 @@
+# Execution flow overview (Show-ScriptMenuGui):
+#   1. CSV parsing      - Import-Csv reads rows; each row gets a unique Reference property.
+#   2. Layout planning  - Get-LayoutPlan (private) converts CSV rows into typed layout elements
+#                         (Heading / Item) and returns column widths + row count.
+#   3. XAML generation  - New-GuiHeading / New-GuiRow (private) emit XAML fragments; the full
+#                         Window XML is assembled from those fragments.
+#   4. Form creation    - New-GuiForm (private) parses XAML, loads WPF assemblies, and collects
+#                         button objects from the visual tree into $script:buttons.
+#   5. Event wiring     - Each button's Click handler calls Invoke-ButtonAction (private), which
+#                         looks up the matching CSV row and delegates to Start-Script (private).
+#   6. Command execution- Start-Script (private) launches the target via Start-Process, choosing
+#                         powershell.exe / pwsh.exe / cmd based on the Method column.
+
 Function Show-ScriptMenuGui {
     <#
     .SYNOPSIS
