@@ -22,7 +22,7 @@ Parameter | What is it?
 `-hideConsole` | Hide the calling PowerShell console.
 `-noExit` | Adds `-NoExit` to PowerShell host launch.
 `-columns` | Optional layout columns for `Grid` mode.
-`-rows` | Optional row target used for grid auto column calculation.
+`-rows` | Optional row target for `Grid` mode; auto-calculates columns to fit that row count (or validates explicit `-columns` against it).
 `-buttonWidth` | Button width (80-600, default 150).
 `-buttonHeight` | Button minimum height (25-300, default 50).
 `-groupLayout` | `Stacked` (default), `Grid`, or `ColumnPerGroup`.

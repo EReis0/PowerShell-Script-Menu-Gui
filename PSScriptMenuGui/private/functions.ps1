@@ -216,14 +216,71 @@ Function Get-LayoutPlan {
 
             $itemCount = [Math]::Max($sortedData.Count,1)
             $gridColumns = 0
-            if ($columns -gt 0) {
+            $sectionCounts = @()
+            foreach ($section in ($orderedSections + @(''))) {
+                if ([string]::IsNullOrWhiteSpace($section)) {
+                    $sectionItems = @($sortedData | Where-Object { [string]::IsNullOrWhiteSpace($_.Section) })
+                    if ($sectionItems.Count -gt 0) {
+                        $sectionCounts += [PSCustomObject]@{ HasHeading = $false; Count = $sectionItems.Count }
+                    }
+                }
+                else {
+                    $sectionItems = @($sortedData | Where-Object { -not [string]::IsNullOrWhiteSpace($_.Section) -and $_.Section.Trim() -eq $section })
+                    if ($sectionItems.Count -gt 0) {
+                        $sectionCounts += [PSCustomObject]@{ HasHeading = $true; Count = $sectionItems.Count }
+                    }
+                }
+            }
+
+            $getRowsForColumns = {
+                param([int]$columnCount)
+
+                if ($columnCount -lt 1) {
+                    throw 'Grid column count must be at least 1.'
+                }
+
+                $totalRows = 0
+                foreach ($sectionCount in $sectionCounts) {
+                    if ($sectionCount.HasHeading) {
+                        $totalRows++
+                    }
+                    $totalRows += [Math]::Ceiling($sectionCount.Count / $columnCount)
+                }
+
+                if ($totalRows -lt 1) {
+                    return 1
+                }
+
+                return $totalRows
+            }
+
+            if ($rows -gt 0) {
+                if ($columns -gt 0) {
+                    $gridColumns = $columns
+                    $calculatedRows = & $getRowsForColumns $gridColumns
+                    if ($calculatedRows -gt $rows) {
+                        throw "Rows/Columns combination cannot fit this menu in Grid layout (required rows: $calculatedRows, requested rows: $rows, columns: $columns). Increase Rows or Columns."
+                    }
+                }
+                else {
+                    for ($candidateColumns = 1; $candidateColumns -le $itemCount; $candidateColumns++) {
+                        $candidateRows = & $getRowsForColumns $candidateColumns
+                        if ($candidateRows -le $rows) {
+                            $gridColumns = $candidateColumns
+                            break
+                        }
+                    }
+
+                    if ($gridColumns -eq 0) {
+                        $gridColumns = $itemCount
+                    }
+                }
+            }
+            elseif ($columns -gt 0) {
                 $gridColumns = $columns
             }
-            elseif ($rows -le 0) {
-                $gridColumns = 2
-            }
             else {
-                $gridColumns = [Math]::Ceiling($itemCount / [Math]::Max($rows,1))
+                $gridColumns = 2
             }
             $gridColumns = [Math]::Max($gridColumns,1)
 
