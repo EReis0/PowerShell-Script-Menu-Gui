@@ -63,7 +63,7 @@ Function Show-ScriptMenuGui {
     Write-Verbose 'Show-ScriptMenuGui started'
 
     if ($columns -lt 0 -or $columns -gt 10) {
-        throw 'Columns must be between 0 and 10 (0 uses auto/default behavior).'
+        throw 'Columns must be between 0 and 10 (0 uses auto/default behavior, primarily for Grid mode).'
     }
     if ($rows -lt 0 -or $rows -gt 200) {
         throw 'Rows must be between 0 and 200 (0 uses auto/default behavior).'
@@ -99,7 +99,7 @@ Function Show-ScriptMenuGui {
     }
 
     # Build layout plan
-    $layoutPlan = Get-LayoutPlan -csvData $csvData -groupLayout $groupLayout -columns $columns -rows $rows -buttonWidth $buttonWidth -Verbose:$verbose
+    $layoutPlan = Get-LayoutPlan -csvData $csvData -groupLayout $groupLayout -columns $columns -rows $rows -buttonWidth $buttonWidth -buttonHeight $buttonHeight -Verbose:$verbose
 
     $columnDefinitions = ($layoutPlan.ColumnWidths | ForEach-Object { "                <ColumnDefinition Width=`"$_`"/>" }) -join [Environment]::NewLine
     $rowDefinitions = ((1..$layoutPlan.RowCount) | ForEach-Object { '                <RowDefinition/>' }) -join [Environment]::NewLine

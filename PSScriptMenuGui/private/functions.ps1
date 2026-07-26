@@ -169,7 +169,8 @@ Function Get-LayoutPlan {
         [Parameter(Mandatory)][ValidateSet('Stacked','Grid','ColumnPerGroup')][string]$groupLayout,
         [Parameter()][int]$columns,
         [Parameter()][int]$rows,
-        [Parameter()][int]$buttonWidth = 150
+        [Parameter()][int]$buttonWidth = 150,
+        [Parameter()][int]$buttonHeight = 50
     )
 
     $elements = @()
