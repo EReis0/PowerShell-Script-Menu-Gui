@@ -99,7 +99,7 @@ Function Show-ScriptMenuGui {
     }
 
     # Build layout plan
-    $layoutPlan = Get-LayoutPlan -csvData $csvData -groupLayout $groupLayout -columns $columns -rows $rows -buttonWidth $buttonWidth
+    $layoutPlan = Get-LayoutPlan -csvData $csvData -groupLayout $groupLayout -columns $columns -rows $rows -buttonWidth $buttonWidth -Verbose:$verbose
 
     $columnDefinitions = ($layoutPlan.ColumnWidths | ForEach-Object { "                <ColumnDefinition Width=`"$_`"/>" }) -join [Environment]::NewLine
     $rowDefinitions = ((1..$layoutPlan.RowCount) | ForEach-Object { '                <RowDefinition/>' }) -join [Environment]::NewLine
@@ -228,7 +228,7 @@ Function New-MenuCsvFromScripts {
     .PARAMETER Append
         Append rows if OutputCsvPath already exists.
     .PARAMETER SectionMap
-        Map filename prefixes to section names.
+        Map filename prefixes to section names (case-insensitive prefix match).
     #>
     [CmdletBinding()]
     param(

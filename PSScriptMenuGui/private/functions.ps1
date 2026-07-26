@@ -206,6 +206,7 @@ Function Get-LayoutPlan {
                 $gridColumns = $columns
             }
             elseif ($rows -gt 0) {
+                # Safe division because this branch only runs for rows > 0.
                 $gridColumns = [Math]::Ceiling($itemCount / $rows)
             }
             else {
