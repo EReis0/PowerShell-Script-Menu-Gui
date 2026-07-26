@@ -309,10 +309,22 @@ Function New-MenuCsvFromScripts {
     }
 
     if ($OutputCsvPath) {
-        if ((Test-Path -Path $OutputCsvPath) -and -not $Append) {
-            Remove-Item -Path $OutputCsvPath -Force
+        if (Test-Path -Path $OutputCsvPath -PathType Container) {
+            throw "OutputCsvPath '$OutputCsvPath' must be a file path, not a directory."
         }
-        $rows | Export-Csv -Path $OutputCsvPath -NoTypeInformation -Append:$Append
+
+        $outputExists = Test-Path -Path $OutputCsvPath -PathType Leaf
+        if ($outputExists -and -not $Append) {
+            Remove-Item -Path $OutputCsvPath -Force
+            $outputExists = $false
+        }
+
+        if ($Append -and $outputExists) {
+            $rows | Export-Csv -Path $OutputCsvPath -NoTypeInformation -Append
+        }
+        else {
+            $rows | Export-Csv -Path $OutputCsvPath -NoTypeInformation
+        }
     }
 
     if ($PassThru -or -not $OutputCsvPath) {
