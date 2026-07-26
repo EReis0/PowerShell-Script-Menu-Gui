@@ -141,7 +141,7 @@ Function Get-LogicalBoolean {
     switch -Regex ($text.Trim()) {
         '^(?i:true|1|yes|y)$' { return $true }
         '^(?i:false|0|no|n)$' { return $false }
-        default { throw "Invalid boolean value '$Value'. Valid values: true/false, yes/no, 1/0." }
+        default { throw "Invalid boolean value '$Value'. Valid values: true/false, yes/no, y/n, 1/0." }
     }
 }
 
