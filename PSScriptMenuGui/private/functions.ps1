@@ -238,7 +238,7 @@ Function Get-LayoutPlan {
                 param([int]$columnCount)
 
                 if ($columnCount -lt 1) {
-                    throw "Invalid column count during Grid layout calculation: $columnCount (must be at least 1)."
+                    throw "Grid layout calculation error: invalid column count $columnCount (must be at least 1)."
                 }
 
                 $totalRows = 0
@@ -261,21 +261,21 @@ Function Get-LayoutPlan {
                     $gridColumns = $columns
                     $calculatedRows = & $getRowsForColumns $gridColumns
                     if ($calculatedRows -gt $rows) {
-                        throw "Cannot fit menu in Grid layout with -rows $rows and -columns $columns (requires $calculatedRows rows). Increase -rows to at least $calculatedRows or reduce -columns."
+                        throw "Grid layout requires $calculatedRows rows with $columns columns, but -rows is set to $rows. Increase -rows to at least $calculatedRows or reduce -columns."
                     }
                 }
                 else {
                     # Find the minimum column count that satisfies the requested row target.
                     $left = 1
                     $right = $itemCount
-                    $bestColumns = 0
+                    $minColumnsForRowTarget = 0
 
                     while ($left -le $right) {
                         $candidateColumns = $left + [int][Math]::Floor(($right - $left) / 2)
                         $candidateRows = & $getRowsForColumns $candidateColumns
 
                         if ($candidateRows -le $rows) {
-                            $bestColumns = $candidateColumns
+                            $minColumnsForRowTarget = $candidateColumns
                             $right = $candidateColumns - 1
                         }
                         else {
@@ -283,8 +283,8 @@ Function Get-LayoutPlan {
                         }
                     }
 
-                    if ($bestColumns -gt 0) {
-                        $gridColumns = $bestColumns
+                    if ($minColumnsForRowTarget -gt 0) {
+                        $gridColumns = $minColumnsForRowTarget
                     }
                     else {
                         $gridColumns = $itemCount
