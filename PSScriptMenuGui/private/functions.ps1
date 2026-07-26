@@ -271,7 +271,7 @@ Function Get-LayoutPlan {
                     $bestColumns = 0
 
                     while ($left -le $right) {
-                        $candidateColumns = [int][Math]::Floor(($left + $right) / 2)
+                        $candidateColumns = $left + [int][Math]::Floor(($right - $left) / 2)
                         $candidateRows = & $getRowsForColumns $candidateColumns
 
                         if ($candidateRows -le $rows) {
