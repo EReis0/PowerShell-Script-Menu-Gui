@@ -178,7 +178,7 @@ Function Get-LayoutPlan {
     $columnWidths = @($buttonColumnWidth,'*')
     $rowCount = 0
 
-    $orderedSections = @()
+    $orderedSectionsList = [System.Collections.Generic.List[string]]::new()
     $seenSections = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     foreach ($row in $csvData) {
         if ([string]::IsNullOrWhiteSpace($row.Section)) {
@@ -187,9 +187,10 @@ Function Get-LayoutPlan {
 
         $normalizedSection = $row.Section.Trim()
         if ($seenSections.Add($normalizedSection)) {
-            $orderedSections += $normalizedSection
+            [void]$orderedSectionsList.Add($normalizedSection)
         }
     }
+    $orderedSections = $orderedSectionsList.ToArray()
 
     $blankSectionItems = @($csvData | Where-Object { [string]::IsNullOrWhiteSpace($_.Section) })
 
