@@ -70,6 +70,16 @@ Show-ScriptMenuGui -csvPath '.\examples\csv\grid-layout.csv' -groupLayout Column
 `Stacked` keeps the legacy behavior.
 Sections are grouped by section name (trimmed, case-insensitive), so CSV rows for the same section do not need to be contiguous.
 
+## Layout visuals (before/after)
+
+Before (legacy/stacked-style menu):
+
+![Before layout example](docs/images/before-stacked-layout.png)
+
+After (updated layout capabilities, including grid/fullscreen behavior):
+
+![After layout example](docs/images/after-layout-demo.gif)
+
 ## Fullscreen
 
 ```powershell
