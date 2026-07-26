@@ -1,4 +1,4 @@
 Section,Method,Command,Arguments,WorkingDirectory,RunAsAdmin,Name,Description
-PowerShell,powershell_file,.\scripts\checkup.ps1,"-PatchOwner \"My Name\" -ShowPatches",.\scripts,False,Checkup Script,.ps1 with multiple parameters
-Batch,cmd,.\scripts\deploy.cmd,"/env:prod /region:\"East US\"",.\scripts,True,Deploy CMD,.cmd with quoted argument value
-Batch,cmd,.\scripts\cleanup.bat,"--mode full --target \"C:\\Program Files\\App\"",.\scripts,False,Cleanup BAT,.bat with spaces in path
+PowerShell,powershell_file,.\scripts\checkup.ps1,"-PatchOwner ""My Name"" -ShowPatches",.\scripts,False,Checkup Script,.ps1 with multiple parameters
+Batch,cmd,.\scripts\deploy.cmd,"/env:prod /region:""East US""",.\scripts,True,Deploy CMD,.cmd with quoted argument value
+Batch,cmd,.\scripts\cleanup.bat,"--mode full --target ""C:\Program Files\App""",.\scripts,False,Cleanup BAT,.bat with spaces in path
