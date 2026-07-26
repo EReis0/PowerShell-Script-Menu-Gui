@@ -117,13 +117,13 @@ Users want control over:
 ### Deliverables
 - [x] New parameters and validation (`-columns 0–10`, `-rows 0–200`, `-buttonWidth 80–600`, `-buttonHeight 25–300`, `-groupLayout Stacked|Grid|ColumnPerGroup`).
 - [x] Grid/column layout implementation (`Get-LayoutPlan` in `private/functions.ps1` handles all three modes).
-- [ ] Before/after screenshots in docs (visual artifact; deferred — not automatable in code).
+- [x] Before/after screenshots in docs (README visual section).
 
 ### Success criteria
 - [x] Users can explicitly control size/shape of menu and reproduce consistent layouts.
 
 ### Progress note
-Completed. `Show-ScriptMenuGui` accepts `-columns`, `-rows`, `-buttonWidth`, `-buttonHeight`, and `-groupLayout`. `Get-LayoutPlan` (private) implements `Stacked` (legacy default), `Grid` (multi-column with deterministic sort and binary-search row-target logic), and `ColumnPerGroup` (one column per section). Guardrails throw on out-of-range values. `examples/csv/grid-layout.csv` demonstrates multi-section grid usage. Screenshots deferred as a visual-only deliverable.
+Completed. `Show-ScriptMenuGui` accepts `-columns`, `-rows`, `-buttonWidth`, `-buttonHeight`, and `-groupLayout`. `Get-LayoutPlan` (private) implements `Stacked` (legacy default), `Grid` (multi-column with deterministic sort and binary-search row-target logic), and `ColumnPerGroup` (one column per section). Guardrails throw on out-of-range values. `examples/csv/grid-layout.csv` demonstrates multi-section grid usage. README now includes a dedicated before/after visual section for layout modes.
 
 ---
 
@@ -315,6 +315,5 @@ Completed. README has parameter reference table, quoting guidance, layout exampl
 
 ~~Start with **Issue #3** (multiple parameters), because it has high user value, low-to-medium implementation complexity, and establishes robust execution plumbing needed by later features.~~
 
-All planned phases are now complete. Future work should focus on:
-- Visual polish (before/after screenshots in docs for Phase 2).
+All planned phases are now complete. Next follow-up work should focus on:
 - Publishing an updated module version to the PowerShell Gallery.
