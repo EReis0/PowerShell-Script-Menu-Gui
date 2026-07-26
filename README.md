@@ -52,7 +52,7 @@ Quoting guidance:
 
 - Quote argument values containing spaces: `-Name "My Value"`.
 - For CSV cells with quotes, escape with double quotes, for example:
-  `"-patchowner ""My Name"" -showpatches"`
+  `"-PatchOwner ""My Name"" -ShowPatches"`
 - For paths with spaces, quote the path in `Arguments`.
 - For Windows paths in CSV, use normal backslashes (e.g. `"C:\Program Files\App"`).
 
