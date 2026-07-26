@@ -51,9 +51,32 @@ Function Show-ScriptMenuGui {
         [string]$buttonBackgroundColor = '#366EE8',
         [string]$iconPath,
         [switch]$hideConsole,
-        [switch]$noExit
+        [switch]$noExit,
+        [int]$columns = 0,
+        [int]$rows = 0,
+        [int]$buttonWidth = 150,
+        [int]$buttonHeight = 50,
+        [ValidateSet('Stacked','Grid','ColumnPerGroup')][string]$groupLayout = 'Stacked',
+        [switch]$fullscreen,
+        [switch]$borderlessFullscreen
     )
     Write-Verbose 'Show-ScriptMenuGui started'
+
+    if ($columns -lt 0 -or $columns -gt 10) {
+        throw 'Columns must be between 1 and 10 when provided.'
+    }
+    if ($rows -lt 0 -or $rows -gt 200) {
+        throw 'Rows must be between 1 and 200 when provided.'
+    }
+    if ($buttonWidth -lt 80 -or $buttonWidth -gt 600) {
+        throw 'ButtonWidth must be between 80 and 600.'
+    }
+    if ($buttonHeight -lt 25 -or $buttonHeight -gt 300) {
+        throw 'ButtonHeight must be between 25 and 300.'
+    }
+    if ($borderlessFullscreen -and -not $fullscreen) {
+        throw 'BorderlessFullscreen requires Fullscreen.'
+    }
 
     # -Verbose value, to pass to select cmdlets
     $verbose = $false
@@ -75,44 +98,65 @@ Function Show-ScriptMenuGui {
         $i++
     }
 
-    # Begin constructing XAML
-    $xaml = Get-Content "$moduleRoot\xaml\start.xaml"
-    $xaml = $xaml.Replace('INSERT_WINDOW_TITLE',$windowTitle)
-    if ($iconPath) {
-        # TODO: change taskbar icon?
-        # WPF wants the absolute path
-        $iconPath = (Resolve-Path $iconPath).Path
-        $xaml = $xaml.Replace('INSERT_ICON_PATH',$iconPath)
+    # Build layout plan
+    $layoutPlan = Get-LayoutPlan -csvData $csvData -groupLayout $groupLayout -columns $columns -rows $rows -buttonWidth $buttonWidth
+
+    $columnDefinitions = ($layoutPlan.ColumnWidths | ForEach-Object { "                <ColumnDefinition Width=`"$_`"/>" }) -join [Environment]::NewLine
+    $rowDefinitions = ((1..$layoutPlan.RowCount) | ForEach-Object { '                <RowDefinition/>' }) -join [Environment]::NewLine
+
+    $contentLines = @()
+    foreach ($element in $layoutPlan.Elements) {
+        if ($element.Type -eq 'Heading') {
+            $contentLines += New-GuiHeading -name $element.Name -row $element.Row -column $element.ButtonColumn -columnSpan $element.ColumnSpan
+            continue
+        }
+
+        $contentLines += New-GuiRow -item $element.Item -row $element.Row -buttonColumn $element.ButtonColumn -descriptionColumn $element.DescriptionColumn -buttonWidth $buttonWidth -buttonHeight $buttonHeight -buttonBackgroundColor $buttonBackgroundColor -buttonForegroundColor $buttonForegroundColor
+    }
+
+    $windowAttributes = @('WindowStartupLocation="CenterScreen"')
+    if ($fullscreen) {
+        $windowAttributes += 'WindowState="Maximized"'
+        $windowAttributes += 'SizeToContent="Manual"'
     }
     else {
-        # No icon specified
-        $xaml = $xaml.Replace('Icon="INSERT_ICON_PATH" ','')
+        $windowAttributes += 'SizeToContent="WidthAndHeight"'
+        $windowAttributes += 'MaxHeight="800"'
+        $windowAttributes += 'MinHeight="200"'
+        $windowAttributes += 'MaxWidth="600"'
+    }
+    if ($borderlessFullscreen) {
+        $windowAttributes += 'WindowStyle="None"'
+        $windowAttributes += 'ResizeMode="NoResize"'
     }
 
-    # Add CSV data to XAML
-    # Row counter
-    $script:row = 0
-    # Not using Group-Object as PS7-preview4 does not preserve original order
-    $sections = $csvData.Section | Where-Object {-not [string]::IsNullOrEmpty($_) } | Get-Unique
-    # Generate GUI rows
-    ForEach ($section in $sections) {
-        Write-Verbose "Adding GUI Section: $section..."
-        # Section Heading
-        $xaml += New-GuiHeading $section
-        $csvData | Where-Object {$_.Section -eq $section} | ForEach-Object {
-            # Add items
-            $xaml += New-GuiRow $_
-        }
+    if ($iconPath) {
+        # WPF wants the absolute path
+        $iconPath = (Resolve-Path $iconPath).Path
+        $windowAttributes += "Icon=`"$iconPath`""
     }
-    Write-Verbose 'Adding any items with blank Section...'
-    $csvData | Where-Object { [string]::IsNullOrEmpty($_.Section) } | ForEach-Object {
-        $xaml += New-GuiRow $_
-        # TODO: spacing at top of window is untidy with no Sections (minor)
-    }
-    Write-Verbose "Added $($row) GUI rows"
 
-    # Finish constructing XAML
-    $xaml += Get-Content "$moduleRoot\xaml\end.xaml"
+    $xaml = @"
+<Window x:Class="WpfApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="$(Get-XamlSafeString $windowTitle)" $($windowAttributes -join ' ')>
+    <ScrollViewer Padding="10,0,10,10">
+        <Grid>
+            <Grid.ColumnDefinitions>
+$columnDefinitions
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+$rowDefinitions
+            </Grid.RowDefinitions>
+$($contentLines -join [Environment]::NewLine)
+        </Grid>
+    </ScrollViewer>
+</Window>
+"@
 
     Write-Verbose 'Creating XAML objects...'
     $form = New-GuiForm -inputXml $xaml
@@ -124,6 +168,15 @@ Function Show-ScriptMenuGui {
             # Use object in pipeline to identify script to run
             Invoke-ButtonAction $_.Source.Name
         } )
+    }
+
+    if ($fullscreen) {
+        $form.Add_KeyDown({
+            if ($_.Key -eq 'Escape') {
+                $_.Handled = $true
+                $this.Close()
+            }
+        })
     }
 
     if ($hideConsole) {
@@ -160,4 +213,109 @@ Function New-ScriptMenuGuiExample {
 
     Write-Verbose "Copying example files to $path..." -Verbose
     Copy-Item -Path "$moduleRoot\examples\*" -Destination $path
+}
+
+Function New-MenuCsvFromScripts {
+    <#
+    .SYNOPSIS
+        Build menu CSV rows from scripts in a folder.
+    .PARAMETER Path
+        Folder to scan for .ps1, .cmd and .bat files.
+    .PARAMETER Recurse
+        Scan all subfolders.
+    .PARAMETER OutputCsvPath
+        Optional output path to write CSV file.
+    .PARAMETER Append
+        Append rows if OutputCsvPath already exists.
+    .PARAMETER SectionMap
+        Map filename prefixes to section names.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [string]$OutputCsvPath,
+        [switch]$Recurse,
+        [switch]$Append,
+        [hashtable]$SectionMap = @{ 'Get' = 'QUERIES'; 'Add' = 'NEW' },
+        [switch]$PassThru
+    )
+
+    $resolvedPath = (Resolve-Path -Path $Path -ErrorAction Stop).Path
+
+    $childItemParams = @{
+        Path = $resolvedPath
+        File = $true
+    }
+    if ($Recurse) {
+        $childItemParams['Recurse'] = $true
+    }
+
+    $files = Get-ChildItem @childItemParams | Where-Object { $_.Extension -in '.ps1', '.cmd', '.bat' } | Sort-Object FullName
+    $rows = foreach ($file in $files) {
+        $baseName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+        $section = ''
+        foreach ($prefix in ($SectionMap.Keys | Sort-Object Length -Descending)) {
+            if ($baseName.StartsWith([string]$prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $section = [string]$SectionMap[$prefix]
+                break
+            }
+        }
+
+        switch ($file.Extension.ToLowerInvariant()) {
+            '.ps1' {
+                $method = 'powershell_file'
+                $description = ''
+                $raw = Get-Content -Path $file.FullName -Raw
+                $synopsisMatch = [regex]::Match($raw, '(?ms)<#.*?\.SYNOPSIS\s*(?<synopsis>.+?)(?:\r?\n\s*\.[A-Z][A-Z0-9_]*|#>)')
+                if ($synopsisMatch.Success) {
+                    $description = (($synopsisMatch.Groups['synopsis'].Value -split "`r?`n") | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1).Trim()
+                }
+            }
+            '.cmd' { 
+                $method = 'cmd'
+                $description = ''
+                foreach ($line in (Get-Content -Path $file.FullName)) {
+                    if ($line -match '^\s*(?:REM\s+|::)(.+)$') {
+                        $description = $matches[1].Trim()
+                        break
+                    }
+                }
+            }
+            '.bat' { 
+                $method = 'cmd'
+                $description = ''
+                foreach ($line in (Get-Content -Path $file.FullName)) {
+                    if ($line -match '^\s*(?:REM\s+|::)(.+)$') {
+                        $description = $matches[1].Trim()
+                        break
+                    }
+                }
+            }
+            default {
+                continue
+            }
+        }
+
+        [PSCustomObject]@{
+            Section = $section
+            Method = $method
+            Command = $file.FullName
+            Arguments = ''
+            WorkingDirectory = $file.DirectoryName
+            RunAsAdmin = 'False'
+            Name = $baseName
+            Description = $description
+        }
+    }
+
+    if ($OutputCsvPath) {
+        if ((Test-Path -Path $OutputCsvPath) -and -not $Append) {
+            Remove-Item -Path $OutputCsvPath -Force
+        }
+        $rows | Export-Csv -Path $OutputCsvPath -NoTypeInformation -Append:$Append
+    }
+
+    if ($PassThru -or -not $OutputCsvPath) {
+        return $rows
+    }
 }

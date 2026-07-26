@@ -1,0 +1,7 @@
+Section,Method,Command,Arguments,WorkingDirectory,RunAsAdmin,Name,Description
+QUERIES,powershell_file,.\scripts\Get-Users.ps1,,.\scripts,False,Get Users,List users
+QUERIES,powershell_file,.\scripts\Get-Devices.ps1,,.\scripts,False,Get Devices,List devices
+NEW,powershell_file,.\scripts\Add-User.ps1,"-Department \"Finance\"",.\scripts,False,Add User,Create user with argument
+NEW,powershell_file,.\scripts\Add-Device.ps1,,.\scripts,False,Add Device,Create device
+TOOLS,cmd,notepad.exe,example.txt,,False,Open Notes,Tool example
+TOOLS,cmd,taskmgr.exe,,,False,Task Manager,Tool example
