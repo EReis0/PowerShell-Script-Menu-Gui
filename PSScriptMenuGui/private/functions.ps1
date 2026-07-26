@@ -237,10 +237,6 @@ Function Get-LayoutPlan {
             $getRowsForColumns = {
                 param([int]$columnCount)
 
-                if ($columnCount -lt 1) {
-                    throw "Grid layout calculation error: invalid column count $columnCount (must be at least 1)."
-                }
-
                 $totalRows = 0
                 foreach ($sectionCount in $sectionCounts) {
                     if ($sectionCount.HasHeading) {
@@ -271,7 +267,7 @@ Function Get-LayoutPlan {
                     $minColumnsForRowTarget = 0
 
                     while ($left -le $right) {
-                        $candidateColumns = $left + [int][Math]::Floor(($right - $left) / 2)
+                        $candidateColumns = $left + [Math]::Floor(($right - $left) / 2)
                         $candidateRows = & $getRowsForColumns $candidateColumns
 
                         if ($candidateRows -le $rows) {
