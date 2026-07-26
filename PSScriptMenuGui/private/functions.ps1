@@ -254,9 +254,11 @@ Function Get-LayoutPlan {
 
             if ($rows -gt 0) {
                 if ($columns -gt 0) {
+                    $calculatedRows = & $getRowsForColumns $columns
                     if ($calculatedRows -gt $rows) {
                         throw "Grid layout requires $calculatedRows rows with $columns columns, but -rows is set to $rows. Increase -rows to at least $calculatedRows or increase -columns."
                     }
+                    $gridColumns = $columns
                 }
                 else {
                     # Find the minimum column count that satisfies the requested row target.

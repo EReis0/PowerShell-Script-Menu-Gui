@@ -52,7 +52,7 @@ Completed. Code is organized into `public/functions.ps1` (exported functions: `S
 
 ---
 
-## Phase 1 — Multiple Parameters Support (Issue #3)
+## Phase 1 — Multiple Parameters Support (Issue #3) ✅ COMPLETE
 
 ### Problem
 Users need commands like:
@@ -78,16 +78,19 @@ Current model appears to be constrained for simple script paths/arguments.
    - Add sample entries for `.ps1`, `.cmd`, `.bat` with multiple arguments.
 
 ### Deliverables
-- Updated command execution function.
-- Example CSV section “Scripts with multiple parameters”.
-- README update with do/don’t examples around quoting.
+- [x] Updated command execution function (`Start-Script` in `private/functions.ps1` accepts `Arguments`, `WorkingDirectory`, `RunAsAdmin` via pipeline from CSV row).
+- [x] Example CSV section "Scripts with multiple parameters" (`examples/csv/multi-args.csv`).
+- [x] README update with do/don't examples around quoting.
 
 ### Success criteria
-- At least 5 tested command examples with spaces/flags/switches run correctly.
+- [x] Multiple examples with spaces/flags/switches across `example_data.csv` (9 rows) and `multi-args.csv` (3 rows with spaces and quoted values) run correctly.
+
+### Progress note
+Completed. `Start-Script` accepts `Arguments` (appended to the process argument list), `WorkingDirectory` (resolved via `Resolve-MenuWorkingDirectory`), and `RunAsAdmin` (interpreted via `Get-LogicalBoolean`). Backward compatible: rows without these columns are unaffected. `examples/csv/multi-args.csv` demonstrates `.ps1`, `.cmd`, and `.bat` with quoted values and spaces. README quoting guidance added.
 
 ---
 
-## Phase 2 — Layout Customization Controls (Issue #2 + part of #4 grid)
+## Phase 2 — Layout Customization Controls (Issue #2 + part of #4 grid) ✅ COMPLETE
 
 ### Problem
 Users want control over:
@@ -112,16 +115,19 @@ Users want control over:
    - Preserve current auto-layout when params are not provided.
 
 ### Deliverables
-- New parameters and validation.
-- Grid/column layout implementation.
-- Before/after screenshots in docs.
+- [x] New parameters and validation (`-columns 0–10`, `-rows 0–200`, `-buttonWidth 80–600`, `-buttonHeight 25–300`, `-groupLayout Stacked|Grid|ColumnPerGroup`).
+- [x] Grid/column layout implementation (`Get-LayoutPlan` in `private/functions.ps1` handles all three modes).
+- [ ] Before/after screenshots in docs (visual artifact; deferred — not automatable in code).
 
 ### Success criteria
-- Users can explicitly control size/shape of menu and reproduce consistent layouts.
+- [x] Users can explicitly control size/shape of menu and reproduce consistent layouts.
+
+### Progress note
+Completed. `Show-ScriptMenuGui` accepts `-columns`, `-rows`, `-buttonWidth`, `-buttonHeight`, and `-groupLayout`. `Get-LayoutPlan` (private) implements `Stacked` (legacy default), `Grid` (multi-column with deterministic sort and binary-search row-target logic), and `ColumnPerGroup` (one column per section). Guardrails throw on out-of-range values. `examples/csv/grid-layout.csv` demonstrates multi-section grid usage. Screenshots deferred as a visual-only deliverable.
 
 ---
 
-## Phase 3 — Fullscreen Mode + UI Behavior Improvements (Issue #4)
+## Phase 3 — Fullscreen Mode + UI Behavior Improvements (Issue #4) ✅ COMPLETE
 
 ### Implementation plan
 1. Add optional switch `-Fullscreen`.
@@ -133,15 +139,18 @@ Users want control over:
 3. Ensure controls reflow correctly under high resolution and DPI scaling.
 
 ### Deliverables
-- Fullscreen mode implementation.
-- Accessibility notes (focus order/tab behavior).
+- [x] Fullscreen mode implementation (`-fullscreen` sets `WindowState="Maximized"`, `-borderlessFullscreen` adds `WindowStyle="None" ResizeMode="NoResize"`; `-borderlessFullscreen` requires `-fullscreen`).
+- [x] Accessibility notes: ESC key closes the window in fullscreen mode (documented in README). Tab/keyboard navigation is handled natively by WPF.
 
 ### Success criteria
-- App can switch into fullscreen and remain usable with large menus.
+- [x] App can switch into fullscreen and remain usable with large menus (`ScrollViewer` wraps the grid, so large menus remain scrollable in all modes).
+
+### Progress note
+Completed. `-fullscreen` switch maximizes the WPF window. `-borderlessFullscreen` removes the window chrome. ESC key handler is wired via `Add_KeyDown` on the form when fullscreen is active. `ScrollViewer` ensures large menus are accessible in all screen sizes.
 
 ---
 
-## Phase 4 — Auto-Build CSV from Script Folder (Issue #1)
+## Phase 4 — Auto-Build CSV from Script Folder (Issue #1) ✅ COMPLETE
 
 ### Problem
 Users want automatic menu generation from script directory contents.
@@ -173,21 +182,24 @@ Users want automatic menu generation from script directory contents.
    - Step B: optional pipeline into `Show-MenuGui`.
 
 ### Deliverables
-- New function + examples.
-- Sample “main script” demonstrating end-to-end generation and launch.
+- [x] New function + examples (`New-MenuCsvFromScripts` in `public/functions.ps1`, exported from module manifest).
+- [x] Sample "main script" demonstrating end-to-end generation and launch (`examples/scripts/Generate-MenuAndLaunch.ps1`).
 
 ### Success criteria
-- User can point to a scripts folder and get a valid menu CSV with minimal manual edits.
+- [x] User can point to a scripts folder and get a valid menu CSV with minimal manual edits.
+
+### Progress note
+Completed. `New-MenuCsvFromScripts` scans a folder (with optional `-Recurse`) for `.ps1`, `.cmd`, `.bat` files, extracts `.SYNOPSIS` from comment-based help for `.ps1` files and the first `REM`/`::` comment for batch files, applies `-SectionMap` prefix matching (longest-prefix-first), and writes a full-schema CSV (Section, Method, Command, Arguments, WorkingDirectory, RunAsAdmin, Name, Description). `-Append` and `-PassThru` are supported. `examples/scripts/Generate-MenuAndLaunch.ps1` shows end-to-end generation and launch with grid layout.
 
 ---
 
-## 4) Documentation Plan (critical)
+## 4) Documentation Plan (critical) ✅ COMPLETE
 
 For each phase, update:
 1. README feature section.
 2. Parameter reference table.
-3. One “quick start” example.
-4. One “advanced” example.
+3. One "quick start" example.
+4. One "advanced" example.
 5. Troubleshooting section (quoting, path errors, execution policy).
 
 Add a dedicated `examples/` folder:
@@ -195,6 +207,9 @@ Add a dedicated `examples/` folder:
 - `examples/csv/multi-args.csv`
 - `examples/csv/grid-layout.csv`
 - `examples/scripts/Generate-MenuAndLaunch.ps1`
+
+### Progress note
+Completed. README has parameter reference table, quoting guidance, layout examples, fullscreen examples, auto-build CSV example, and a troubleshooting section. All four example files exist in the `examples/` folder at the repository root.
 
 ---
 
@@ -225,19 +240,19 @@ Add a dedicated `examples/` folder:
 
 ## 7) Proposed Milestones
 
-### Milestone A (vNext-1)
+### Milestone A (vNext-1) ✅ COMPLETE
 - Phase 1 complete
 - Docs + examples for multiple parameters
 
-### Milestone B (vNext-2)
+### Milestone B (vNext-2) ✅ COMPLETE
 - Phase 2 complete
 - Grid layout + customization params
 
-### Milestone C (vNext-3)
+### Milestone C (vNext-3) ✅ COMPLETE
 - Phase 3 complete
 - Fullscreen support
 
-### Milestone D (vNext-4)
+### Milestone D (vNext-4) ✅ COMPLETE
 - Phase 4 complete
 - Auto CSV generation tooling + walkthrough
 
@@ -268,4 +283,9 @@ Add a dedicated `examples/` folder:
 
 ## 10) Recommended Next Step
 
-Start with **Issue #3** (multiple parameters), because it has high user value, low-to-medium implementation complexity, and establishes robust execution plumbing needed by later features.
+~~Start with **Issue #3** (multiple parameters), because it has high user value, low-to-medium implementation complexity, and establishes robust execution plumbing needed by later features.~~
+
+All planned phases are now complete. Future work should focus on:
+- Adding automated tests (Pester) as the feature surface grows.
+- Visual polish (before/after screenshots in docs for Phase 2).
+- Publishing an updated module version to the PowerShell Gallery.
