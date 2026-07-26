@@ -15,45 +15,50 @@ function Hide-Console {
 
 Function New-GuiHeading {
     param(
-        [Parameter(Mandatory)][string]$name
+        [Parameter(Mandatory)][string]$name,
+        [Parameter(Mandatory)][int]$row,
+        [Parameter(Mandatory)][int]$column,
+        [Parameter(Mandatory)][int]$columnSpan
     )
-    $string = Get-Content "$moduleRoot\xaml\heading.xaml"
-    $string = $string.Replace('INSERT_SECTION_HEADING',(Get-XamlSafeString $name) )
-    $string = $string.Replace('INSERT_ROW',$row)
-    $script:row++
 
-    return $string
+    return "            <TextBlock Text=`"$(Get-XamlSafeString $name)`" TextWrapping=`"Wrap`" Grid.Row=`"$row`" Grid.Column=`"$column`" Grid.ColumnSpan=`"$columnSpan`" FontSize=`"25`" Padding=`"5,10,0,5`" />"
 }
 
 Function New-GuiRow {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][PSCustomObject]$item
+        [Parameter(Mandatory)][PSCustomObject]$item,
+        [Parameter(Mandatory)][int]$row,
+        [Parameter(Mandatory)][int]$buttonColumn,
+        [Parameter(Mandatory)][int]$descriptionColumn,
+        [Parameter(Mandatory)][int]$buttonWidth,
+        [Parameter(Mandatory)][int]$buttonHeight,
+        [Parameter(Mandatory)][string]$buttonBackgroundColor,
+        [Parameter(Mandatory)][string]$buttonForegroundColor
     )
-    Write-Verbose $item
 
-    $string = Get-Content "$moduleRoot\xaml\item.xaml"
-    $string = $string.Replace('INSERT_BACKGROUND_COLOR',$buttonBackgroundColor)
-    $string = $string.Replace('INSERT_FOREGROUND_COLOR',$buttonForegroundColor)
-    $string = $string.Replace('INSERT_BUTTON_TEXT',(Get-XamlSafeString $item.Name) )
-    # Description is optional
-    if ($item.Description) {
-        $string = $string.Replace('INSERT_DESCRIPTION',(Get-XamlSafeString $item.Description) )
+    $safeName = Get-XamlSafeString $item.Name
+    $safeDescription = ''
+    if (-not [string]::IsNullOrWhiteSpace($item.Description)) {
+        $safeDescription = Get-XamlSafeString $item.Description
     }
-    else {
-        $string = $string.Replace('INSERT_DESCRIPTION','')
-    }
-    $string = $string.Replace('INSERT_BUTTON_NAME',$item.Reference)
-    $string = $string.Replace('INSERT_ROW',$row)
-    $script:row++
 
-    return $string
+    return @(
+"            <Button x:Name=`"$($item.Reference)`" Grid.Row=`"$row`" Grid.Column=`"$buttonColumn`" Background=`"$buttonBackgroundColor`" Foreground=`"$buttonForegroundColor`" Width=`"$buttonWidth`" MinHeight=`"$buttonHeight`" VerticalAlignment=`"Top`" Padding=`"10`" Margin=`"0,5,0,5`" >",
+"                <TextBlock TextWrapping=`"Wrap`" TextAlignment=`"Center`">$safeName</TextBlock>",
+'            </Button>',
+"            <TextBlock TextWrapping=`"Wrap`" Grid.Row=`"$row`" Grid.Column=`"$descriptionColumn`" Padding=`"10,5,0,5`" VerticalAlignment=`"Center`">$safeDescription</TextBlock>"
+    )
 }
 
 Function Get-XamlSafeString {
     param(
-        [Parameter(Mandatory)][string]$string
+        [AllowEmptyString()][string]$string
     )
+    if ($null -eq $string) {
+        $string = ''
+    }
+
     # https://docs.microsoft.com/en-us/dotnet/framework/wpf/advanced/how-to-use-special-characters-in-xaml
     # Order matters: &amp first
     $string = $string.Replace('&','&amp;').Replace('<','&lt;').Replace('>','&gt;').Replace('"','&quot;')
@@ -119,6 +124,170 @@ Function Invoke-ButtonAction {
     }
 }
 
+Function Get-LogicalBoolean {
+    param(
+        [AllowNull()][AllowEmptyString()][object]$Value
+    )
+
+    if ($null -eq $Value) {
+        return $false
+    }
+
+    $text = [string]$Value
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $false
+    }
+
+    switch -Regex ($text.Trim()) {
+        '^(?i:true|1|yes|y)$' { return $true }
+        '^(?i:false|0|no|n)$' { return $false }
+        default { throw "Invalid boolean value '$Value'. Valid values: true/false, yes/no, y/n, 1/0." }
+    }
+}
+
+Function Resolve-MenuWorkingDirectory {
+    param(
+        [AllowNull()][AllowEmptyString()][string]$WorkingDirectory
+    )
+
+    if ([string]::IsNullOrWhiteSpace($WorkingDirectory)) {
+        return $null
+    }
+
+    try {
+        return (Resolve-Path -Path $WorkingDirectory -ErrorAction Stop).Path
+    }
+    catch {
+        throw "WorkingDirectory '$WorkingDirectory' was not found."
+    }
+}
+
+Function Get-LayoutPlan {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][array]$csvData,
+        [Parameter(Mandatory)][ValidateSet('Stacked','Grid','ColumnPerGroup')][string]$groupLayout,
+        [Parameter()][int]$columns,
+        [Parameter()][int]$rows,
+        [Parameter()][int]$buttonWidth = 150,
+        [Parameter()][int]$buttonHeight = 50
+    )
+
+    $elements = @()
+    $buttonColumnWidth = [string]$buttonWidth
+    $columnWidths = @($buttonColumnWidth,'*')
+    $rowCount = 0
+
+    $orderedSections = @($csvData.Section | Where-Object {-not [string]::IsNullOrEmpty($_)} | Get-Unique)
+    $blankSectionItems = @($csvData | Where-Object { [string]::IsNullOrEmpty($_.Section) })
+
+    switch ($groupLayout) {
+        'Stacked' {
+            $currentRow = 0
+            foreach ($section in $orderedSections) {
+                $elements += [PSCustomObject]@{ Type='Heading'; Name=$section; Row=$currentRow; ButtonColumn=0; DescriptionColumn=1; ColumnSpan=2 }
+                $currentRow++
+                foreach ($item in ($csvData | Where-Object {$_.Section -eq $section})) {
+                    $elements += [PSCustomObject]@{ Type='Item'; Item=$item; Row=$currentRow; ButtonColumn=0; DescriptionColumn=1; ColumnSpan=1 }
+                    $currentRow++
+                }
+            }
+            foreach ($item in $blankSectionItems) {
+                $elements += [PSCustomObject]@{ Type='Item'; Item=$item; Row=$currentRow; ButtonColumn=0; DescriptionColumn=1; ColumnSpan=1 }
+                $currentRow++
+            }
+            $rowCount = [Math]::Max($currentRow,1)
+        }
+        'Grid' {
+            $sortedData = $csvData | Sort-Object @{Expression={ if ([string]::IsNullOrWhiteSpace($_.Section)) { 1 } else { 0 } }}, @{Expression={ $_.Section }}, Name, Command
+
+            $itemCount = [Math]::Max($sortedData.Count,1)
+            $gridColumns = 0
+            if ($columns -gt 0) {
+                $gridColumns = $columns
+            }
+            elseif ($rows -le 0) {
+                $gridColumns = 2
+            }
+            else {
+                $gridColumns = [Math]::Ceiling($itemCount / [Math]::Max($rows,1))
+            }
+            $gridColumns = [Math]::Max($gridColumns,1)
+
+            $columnWidths = @()
+            for ($i = 0; $i -lt $gridColumns; $i++) {
+                $columnWidths += $buttonColumnWidth
+                $columnWidths += '*'
+            }
+
+            $currentRow = 0
+            foreach ($section in ($orderedSections + @(''))) {
+                $sectionItems = @($sortedData | Where-Object {$_.Section -eq $section})
+                if ($sectionItems.Count -eq 0) {
+                    continue
+                }
+
+                if (-not [string]::IsNullOrWhiteSpace($section)) {
+                    $elements += [PSCustomObject]@{ Type='Heading'; Name=$section; Row=$currentRow; ButtonColumn=0; DescriptionColumn=1; ColumnSpan=($gridColumns * 2) }
+                    $currentRow++
+                }
+
+                for ($i = 0; $i -lt $sectionItems.Count; $i++) {
+                    $itemRow = $currentRow + [Math]::Floor($i / $gridColumns)
+                    $buttonColumn = ($i % $gridColumns) * 2
+                    $elements += [PSCustomObject]@{ Type='Item'; Item=$sectionItems[$i]; Row=$itemRow; ButtonColumn=$buttonColumn; DescriptionColumn=($buttonColumn + 1); ColumnSpan=1 }
+                }
+
+                $currentRow += [Math]::Ceiling($sectionItems.Count / $gridColumns)
+            }
+
+            $rowCount = [Math]::Max($currentRow,1)
+        }
+        'ColumnPerGroup' {
+            $sectionBlocks = @()
+            foreach ($section in $orderedSections) {
+                $sectionBlocks += [PSCustomObject]@{
+                    Name = $section
+                    Items = @($csvData | Where-Object {$_.Section -eq $section} | Sort-Object Name, Command)
+                }
+            }
+            if ($blankSectionItems.Count -gt 0) {
+                $sectionBlocks += [PSCustomObject]@{ Name='Other'; Items=($blankSectionItems | Sort-Object Name, Command) }
+            }
+            if ($sectionBlocks.Count -eq 0) {
+                $sectionBlocks += [PSCustomObject]@{ Name='Items'; Items=@($csvData | Sort-Object Name, Command) }
+            }
+
+            $columnWidths = @()
+            for ($i = 0; $i -lt $sectionBlocks.Count; $i++) {
+                $columnWidths += $buttonColumnWidth
+                $columnWidths += '*'
+            }
+
+            $maxRowsPerSection = 0
+            for ($i = 0; $i -lt $sectionBlocks.Count; $i++) {
+                $buttonColumn = $i * 2
+                $section = $sectionBlocks[$i]
+                $elements += [PSCustomObject]@{ Type='Heading'; Name=$section.Name; Row=0; ButtonColumn=$buttonColumn; DescriptionColumn=($buttonColumn + 1); ColumnSpan=2 }
+                for ($j = 0; $j -lt $section.Items.Count; $j++) {
+                    $elements += [PSCustomObject]@{ Type='Item'; Item=$section.Items[$j]; Row=($j + 1); ButtonColumn=$buttonColumn; DescriptionColumn=($buttonColumn + 1); ColumnSpan=1 }
+                }
+                if ($section.Items.Count -gt $maxRowsPerSection) {
+                    $maxRowsPerSection = $section.Items.Count
+                }
+            }
+
+            $rowCount = [Math]::Max(($maxRowsPerSection + 1),1)
+        }
+    }
+
+    return [PSCustomObject]@{
+        Elements = $elements
+        ColumnWidths = $columnWidths
+        RowCount = $rowCount
+    }
+}
+
 Function Start-Script {
     [CmdletBinding()]
     param(
@@ -128,45 +297,42 @@ Function Start-Script {
 
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)][string]$command,
 
-        [Parameter(ValueFromPipelineByPropertyName)][string]$arguments
+        [Parameter(ValueFromPipelineByPropertyName)][string]$arguments,
+
+        [Parameter(ValueFromPipelineByPropertyName)][string]$workingDirectory,
+
+        [Parameter(ValueFromPipelineByPropertyName)][object]$runAsAdmin
     )
+
+    if ([string]::IsNullOrWhiteSpace($command)) {
+        throw 'Command must not be empty.'
+    }
+
+    $startProcessParams = @{
+        Verbose = $verbose
+    }
+
+    $resolvedWorkingDirectory = Resolve-MenuWorkingDirectory -WorkingDirectory $workingDirectory
+    if ($resolvedWorkingDirectory) {
+        $startProcessParams['WorkingDirectory'] = $resolvedWorkingDirectory
+    }
+
+    if (Get-LogicalBoolean -Value $runAsAdmin) {
+        $startProcessParams['Verb'] = 'RunAs'
+    }
 
     # Handle cmd first
     if ($method -eq 'cmd') {
-        if ($arguments) {
-            # Using .NET directly, as Start-Process adds a trailing space to arguments
-            # https://social.technet.microsoft.com/Forums/en-US/97be1de5-f31e-416e-9752-ed60c39c0383/powershell-40-startprocess-adds-extra-space-to-commandline
-            $process = New-Object System.Diagnostics.Process
-            $process.StartInfo.FileName = $command
-            $process.StartInfo.Arguments = $arguments
-            # Set process working directory to PowerShell working directory
-            # Mimics behaviour of exe called from cmd prompt
-            $process.StartInfo.WorkingDirectory = $PWD
-            $process.Start()
+        $startProcessParams['FilePath'] = $command
+        if (-not [string]::IsNullOrWhiteSpace($arguments)) {
+            $startProcessParams['ArgumentList'] = $arguments
         }
-        else {
-            Start-Process -FilePath $command -Verbose:$verbose
-        }
+        Start-Process @startProcessParams
         return
-    }
-
-    # Begin constructing PowerShell arguments
-    $psArguments = @()
-    $psArguments += '-ExecutionPolicy Bypass'
-    $psArguments += '-NoLogo'
-    if ($noExit) {
-        # Global -NoExit switch
-        $psArguments += '-NoExit'
-    }
-    if ($arguments) {
-        # Additional PS arguments from CSV
-        # PowerShell doesn't seem to care if it gets the same argument twice
-        $psArguments += $arguments
     }
 
     # Set Start-Process params according to CSV method
     $splitMethod = $method.Split('_')
-    $encodedCommand = [Convert]::ToBase64String( [System.Text.Encoding]::Unicode.GetBytes($command) )
     switch ($splitMethod[0]) {
         powershell {
             $filePath = 'powershell.exe'
@@ -175,16 +341,32 @@ Function Start-Script {
             $filePath = 'pwsh.exe'
         }
     }
+
+    $processArguments = '-ExecutionPolicy Bypass -NoLogo'
+    if ($noExit) {
+        $processArguments += ' -NoExit'
+    }
+
     switch ($splitMethod[1]) {
         file {
-            $psArguments += "-File `"$command`""
+            $processArguments += " -File `"$command`""
+            if (-not [string]::IsNullOrWhiteSpace($arguments)) {
+                $processArguments += " $arguments"
+            }
         }
         inline {
-            $psArguments += "-EncodedCommand `"$encodedCommand`""
+            $encodedCommand = [Convert]::ToBase64String( [System.Text.Encoding]::Unicode.GetBytes($command) )
+            $processArguments += " -EncodedCommand `"$encodedCommand`""
+            if (-not [string]::IsNullOrWhiteSpace($arguments)) {
+                $processArguments += " $arguments"
+            }
         }
     }
 
+    $startProcessParams['FilePath'] = $filePath
+    $startProcessParams['ArgumentList'] = $processArguments
+
     # Launch process
-    $psArguments | ForEach-Object { Write-Verbose $_ }
-    Start-Process -FilePath $filePath -ArgumentList $psArguments -Verbose:$verbose
+    Write-Verbose $processArguments
+    Start-Process @startProcessParams
 }
