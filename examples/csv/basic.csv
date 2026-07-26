@@ -1,4 +1,4 @@
 Section,Method,Command,Arguments,WorkingDirectory,RunAsAdmin,Name,Description
 Utilities,cmd,taskmgr.exe,,,False,Task Manager,Open Task Manager
-Utilities,powershell_file,.\Scripts\CheckStatus.ps1,,.\Scripts,False,Check Status,Run status check script
+Utilities,powershell_file,.\scripts\CheckStatus.ps1,,.\scripts,False,Check Status,Run status check script
 ,cmd,notepad.exe,README.md,,False,Readme,Open project readme

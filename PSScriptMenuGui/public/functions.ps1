@@ -251,6 +251,16 @@ Function New-MenuCsvFromScripts {
     }
 
     $files = Get-ChildItem @childItemParams | Where-Object { $_.Extension -in '.ps1', '.cmd', '.bat' } | Sort-Object FullName
+
+    $getBatchDescription = {
+        param([string]$filePath)
+        foreach ($line in (Get-Content -Path $filePath)) {
+            if ($line -match '^\s*(?:REM\s+|::)(.+)$') {
+                return $matches[1].Trim()
+            }
+        }
+        return ''
+    }
     $rows = foreach ($file in $files) {
         $baseName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
         $section = ''
@@ -266,6 +276,7 @@ Function New-MenuCsvFromScripts {
                 $method = 'powershell_file'
                 $description = ''
                 $raw = Get-Content -Path $file.FullName -Raw
+                # Extract the first .SYNOPSIS line from comment-based help blocks.
                 $synopsisMatch = [regex]::Match($raw, '(?ms)<#.*?\.SYNOPSIS\s*(?<synopsis>.+?)(?:\r?\n\s*\.[A-Z][A-Z0-9_]*|#>)')
                 if ($synopsisMatch.Success) {
                     $description = (($synopsisMatch.Groups['synopsis'].Value -split "`r?`n") | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1).Trim()
@@ -273,23 +284,11 @@ Function New-MenuCsvFromScripts {
             }
             '.cmd' { 
                 $method = 'cmd'
-                $description = ''
-                foreach ($line in (Get-Content -Path $file.FullName)) {
-                    if ($line -match '^\s*(?:REM\s+|::)(.+)$') {
-                        $description = $matches[1].Trim()
-                        break
-                    }
-                }
+                $description = & $getBatchDescription $file.FullName
             }
             '.bat' { 
                 $method = 'cmd'
-                $description = ''
-                foreach ($line in (Get-Content -Path $file.FullName)) {
-                    if ($line -match '^\s*(?:REM\s+|::)(.+)$') {
-                        $description = $matches[1].Trim()
-                        break
-                    }
-                }
+                $description = & $getBatchDescription $file.FullName
             }
             default {
                 continue

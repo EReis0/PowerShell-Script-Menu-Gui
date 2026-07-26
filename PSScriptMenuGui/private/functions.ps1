@@ -198,7 +198,7 @@ Function Get-LayoutPlan {
             $rowCount = [Math]::Max($currentRow,1)
         }
         'Grid' {
-            $sortedData = $csvData | Sort-Object @{Expression={ if ([string]::IsNullOrWhiteSpace($_.Section)) { 'ZZZZZZ' } else { $_.Section } }}, Name, Command
+            $sortedData = $csvData | Sort-Object @{Expression={ if ([string]::IsNullOrWhiteSpace($_.Section)) { 1 } else { 0 } }}, @{Expression={ $_.Section }}, Name, Command
 
             $itemCount = [Math]::Max($sortedData.Count,1)
             $gridColumns = 0
