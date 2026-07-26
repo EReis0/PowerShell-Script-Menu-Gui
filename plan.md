@@ -117,7 +117,7 @@ Users want control over:
 ### Deliverables
 - [x] New parameters and validation (`-columns 0–10`, `-rows 0–200`, `-buttonWidth 80–600`, `-buttonHeight 25–300`, `-groupLayout Stacked|Grid|ColumnPerGroup`).
 - [x] Grid/column layout implementation (`Get-LayoutPlan` in `private/functions.ps1` handles all three modes).
-- [x] Before/after screenshots in docs (README visual section).
+- [x] Before/after visuals in docs (README visual section).
 
 ### Success criteria
 - [x] Users can explicitly control size/shape of menu and reproduce consistent layouts.
