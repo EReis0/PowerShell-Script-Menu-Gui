@@ -95,9 +95,19 @@ See: `examples/scripts/Generate-MenuAndLaunch.ps1`
 - **Script blocked**: check execution policy and signing requirements.
 - **No visible errors**: disable `-hideConsole` while troubleshooting.
 
+## Automated tests
+
+Run from repository root:
+
+```powershell
+Invoke-Pester -Path .\tests
+```
+
+Current coverage focuses on `New-MenuCsvFromScripts` behavior (metadata extraction, section mapping, CSV output/append, and output path validation).
+
 ## Manual validation notes
 
-There is no test framework in this repository. Reproducible validation:
+In addition to automated tests, reproducible manual validation:
 
 1. Import module and run `Get-Command -Module PSScriptMenuGui`.
 2. Generate CSV via `New-MenuCsvFromScripts` and verify exported columns.
