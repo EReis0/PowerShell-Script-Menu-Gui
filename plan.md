@@ -193,6 +193,32 @@ Completed. `New-MenuCsvFromScripts` scans a folder (with optional `-Recurse`) fo
 
 ---
 
+## Phase 5 — Automated Pester Coverage (post-vNext hardening) ✅ COMPLETE
+
+### Problem
+Manual-only validation is increasingly costly as the feature surface grows.
+
+### Implementation plan
+1. Add a lightweight Pester test suite focused on non-UI logic that runs cross-platform.
+2. Cover core CSV generation behavior (`New-MenuCsvFromScripts`) including:
+   - metadata extraction,
+   - section prefix mapping,
+   - CSV write/append behavior,
+   - error handling for invalid output path usage.
+3. Document a repeatable local test command.
+
+### Deliverables
+- [x] Pester tests added under `tests/` for `New-MenuCsvFromScripts`.
+- [x] README updated with automated test instructions.
+
+### Success criteria
+- [x] Tests execute successfully with `Invoke-Pester` and validate CSV generation behavior.
+
+### Progress note
+Completed. Added `tests/New-MenuCsvFromScripts.Tests.ps1` with focused coverage for script discovery, `.SYNOPSIS`/batch comment extraction, longest-prefix section mapping, CSV append behavior, and output path validation.
+
+---
+
 ## 4) Documentation Plan (critical) ✅ COMPLETE
 
 For each phase, update:
@@ -226,6 +252,10 @@ Completed. README has parameter reference table, quoting guidance, layout exampl
 ### Regression checks
 - Existing sample CSV behavior unchanged.
 - Existing command-only rows still execute.
+
+### Automated checks ✅ COMPLETE
+- Run `Invoke-Pester -Path .\tests` from the repository root.
+- Current automated coverage targets CSV auto-generation behavior in `New-MenuCsvFromScripts`.
 
 ---
 
@@ -286,6 +316,5 @@ Completed. README has parameter reference table, quoting guidance, layout exampl
 ~~Start with **Issue #3** (multiple parameters), because it has high user value, low-to-medium implementation complexity, and establishes robust execution plumbing needed by later features.~~
 
 All planned phases are now complete. Future work should focus on:
-- Adding automated tests (Pester) as the feature surface grows.
 - Visual polish (before/after screenshots in docs for Phase 2).
 - Publishing an updated module version to the PowerShell Gallery.
