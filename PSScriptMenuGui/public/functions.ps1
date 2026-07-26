@@ -146,7 +146,7 @@ Function Show-ScriptMenuGui {
     if ($iconPath) {
         # WPF wants the absolute path
         $iconPath = (Resolve-Path -Path $iconPath -ErrorAction Stop).Path
-        $windowAttributes += "Icon=`"$(Get-XamlSafeString $iconPath)`""
+        $windowAttributes += ('Icon="{0}"' -f (Get-XamlSafeString $iconPath))
     }
 
     $xaml = @"

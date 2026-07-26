@@ -85,6 +85,8 @@ param()
 
         $csvRows = Import-Csv -Path $outputPath
         $csvRows.Count | Should -Be 3
+        ($csvRows | Where-Object Name -eq 'Get-First').Count | Should -Be 2
+        ($csvRows | Where-Object Name -eq 'Get-Second').Count | Should -Be 1
     }
 
     It 'throws if OutputCsvPath is a directory' {
