@@ -242,6 +242,8 @@ Function New-MenuCsvFromScripts {
         Append rows if OutputCsvPath already exists.
     .PARAMETER SectionMap
         Map filename prefixes to section names (case-insensitive prefix match).
+    .PARAMETER PassThru
+        Return the generated rows to the pipeline even when OutputCsvPath is specified.
     #>
     [CmdletBinding()]
     param(

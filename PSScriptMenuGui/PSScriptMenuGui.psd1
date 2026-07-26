@@ -12,7 +12,7 @@
 RootModule = 'PSScriptMenuGui.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.1'
+ModuleVersion = '2.0.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -115,7 +115,26 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = @'
+## v2.0.0
+
+### New features
+- **Multiple parameters support** (Issue #3): `Arguments`, `WorkingDirectory`, and `RunAsAdmin` columns added to CSV schema. `Start-Script` (private) pipes those values directly to `Start-Process`, with quoting guidance documented in README.
+- **Layout customisation** (Issue #2): New `Show-ScriptMenuGui` parameters `-columns`, `-rows`, `-buttonWidth`, `-buttonHeight`, and `-groupLayout` (`Stacked` | `Grid` | `ColumnPerGroup`). `Get-LayoutPlan` (private) drives all three layout modes.
+- **Grid layout** (Issue #4, partial): Multi-column deterministic grid with binary-search row-target logic when only `-rows` is given.
+- **Fullscreen mode** (Issue #4): `-fullscreen` maximises the WPF window; `-borderlessFullscreen` removes the window chrome. ESC closes the window in fullscreen.
+- **Auto-build CSV from scripts** (Issue #1): New exported cmdlet `New-MenuCsvFromScripts` scans `.ps1`, `.cmd`, `.bat` files, extracts `.SYNOPSIS` / batch comment metadata, applies a configurable `SectionMap`, and writes a full-schema CSV.
+
+### Pester test suite
+- `tests/New-MenuCsvFromScripts.Tests.ps1` covers metadata extraction, longest-prefix section mapping, CSV append behavior, and output-path validation. Run with `Invoke-Pester -Path .\tests`.
+
+### Examples
+- `examples/csv/basic.csv`, `multi-args.csv`, `grid-layout.csv`
+- `examples/scripts/Generate-MenuAndLaunch.ps1` (end-to-end auto-generation and launch)
+
+### Backward compatibility
+Existing CSV files and calling code continue to work unchanged.
+'@
 
         # Prerelease string of this module
         # Prerelease = ''
