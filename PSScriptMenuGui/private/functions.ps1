@@ -236,7 +236,7 @@ Function Get-LayoutPlan {
                 param([int]$columnCount)
 
                 if ($columnCount -lt 1) {
-                    throw 'Grid column count must be at least 1.'
+                    throw 'Invalid column count for Grid layout calculation: must be at least 1.'
                 }
 
                 $totalRows = 0
@@ -259,7 +259,7 @@ Function Get-LayoutPlan {
                     $gridColumns = $columns
                     $calculatedRows = & $getRowsForColumns $gridColumns
                     if ($calculatedRows -gt $rows) {
-                        throw "Rows/Columns combination cannot fit this menu in Grid layout (required rows: $calculatedRows, requested rows: $rows, columns: $columns). Increase Rows or Columns."
+                        throw "Rows/Columns combination cannot fit this menu in Grid layout (required rows: $calculatedRows, requested rows: $rows, columns: $columns). Increase -rows or decrease -columns."
                     }
                 }
                 else {
